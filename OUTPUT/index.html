@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>videojs-contrib-hls embed</title>
+
+    <!--
+ 
+  Uses the latest versions of video.js and videojs-http-streaming.
+ 
+  To use specific versions, please change the URLs to the form:
+ 
+  <link href="https://unpkg.com/video.js@6.7.1/dist/video-js.css" rel="stylesheet">
+  <script src="https://unpkg.com/video.js@6.7.1/dist/video.js"></script>
+  <script src="https://unpkg.com/@videojs/http-streaming@0.9.0/dist/videojs-http-streaming.js"></script>
+ 
+  -->
+
+    <link href="video-js.css" rel="stylesheet">
+</head>
+
+<body>
+    <h1>Testing 123</h1>
+
+    <video-js id="my_video_1" class="vjs-default-skin" controls preload="auto" width="720" height="480">
+        <source src="http://127.0.0.1:9293/asset/video/test_video.mp4/video.m3u8" type="application/x-mpegURL">
+    </video-js>
+
+    <script src="video.js"></script>
+    <script src="videojs-http-streaming.js"></script>
+
+    <script>
+        var player = videojs('my_video_1');
+    </script>
+
+</body>
+
+</html>
+
+
+
+<!-- https://video.twimg.com/amplify_video/1158708708068745216/pl/480x480/XwDJBf-F7tIeXR9O.m3u8 -->
