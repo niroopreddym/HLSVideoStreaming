@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
 	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect

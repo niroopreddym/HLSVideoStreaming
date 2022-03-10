@@ -13,34 +13,41 @@ import (
 
 //VideoCache is the Cache Handler
 type VideoCache struct {
-	RedisDB services.Redis
+	RedisDB   services.Redis
+	muxRouter *mux.Router
 }
 
 //NewVideoCacheHandler returns a new instance of the VideoCacheHandler
-func NewVideoCacheHandler() *VideoCache {
+func NewVideoCacheHandler(mux *mux.Router) *VideoCache {
 	return &VideoCache{
-		RedisDB: *services.NewRedisInstance("127.0.0.1", "6389"),
+		RedisDB:   *services.NewRedisInstance("127.0.0.1", "6389"),
+		muxRouter: mux,
 	}
 }
 
 //GetPlaylistInfo retrives the Meta File
 func (handler *VideoCache) GetPlaylistInfo(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	videoID := params["id"]
-	cmd := handler.RedisDB.RedisClient.LRange(string(videoID), 0, 20)
-	val := cmd.Val()
-	indexFile := val[0]
-	value := handler.RedisDB.GetValueByKey(indexFile)
-	//alter the m3u8File and append the prefix to the ts files
-	alteredString := alterTheM3U8Data(value, videoID)
-	b := bytes.NewBuffer([]byte(alteredString))
+	condition := false
+	if condition {
+		params := mux.Vars(r)
+		videoID := params["id"]
+		cmd := handler.RedisDB.RedisClient.LRange(string(videoID), 0, 20)
+		val := cmd.Val()
+		indexFile := val[0]
+		value := handler.RedisDB.GetValueByKey(indexFile)
+		//alter the m3u8File and append the prefix to the ts files
+		alteredString := alterTheM3U8Data(value, videoID)
+		b := bytes.NewBuffer([]byte(alteredString))
 
-	// stream straight to client(browser)
-	w.Header().Set("Content-type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+		// stream straight to client(browser)
+		w.Header().Set("Content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	if _, err := b.WriteTo(w); err != nil {
-		fmt.Fprintf(w, "%s", err)
+		if _, err := b.WriteTo(w); err != nil {
+			fmt.Fprintf(w, "%s", err)
+		}
+	} else {
+		handler.muxRouter.PathPrefix("/asset/video/").Handler(http.StripPrefix("/asset/video/", http.FileServer(http.Dir("../OUTPUT/video"))))
 	}
 
 	return
