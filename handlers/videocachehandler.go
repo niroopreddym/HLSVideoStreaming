@@ -8,26 +8,26 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/niroopreddym/HLSConversion/services"
+	"github.com/niroopreddym/HLSVideoStreaming/services"
 )
 
-//VideoCache is the Cache Handler
+// VideoCache is the Cache Handler
 type VideoCache struct {
 	RedisDB   services.Redis
 	muxRouter *mux.Router
 }
 
-//NewVideoCacheHandler returns a new instance of the VideoCacheHandler
+// NewVideoCacheHandler returns a new instance of the VideoCacheHandler
 func NewVideoCacheHandler(mux *mux.Router) *VideoCache {
 	return &VideoCache{
-		RedisDB:   *services.NewRedisInstance("127.0.0.1", "6389"),
+		RedisDB:   *services.NewRedisInstance("127.0.0.1", "6379"),
 		muxRouter: mux,
 	}
 }
 
-//GetPlaylistInfo retrives the Meta File
+// GetPlaylistInfo retrives the Meta File
 func (handler *VideoCache) GetPlaylistInfo(w http.ResponseWriter, r *http.Request) {
-	condition := false
+	condition := true
 	if condition {
 		params := mux.Vars(r)
 		videoID := params["id"]
@@ -58,10 +58,9 @@ func alterTheM3U8Data(value string, videoID string) string {
 	return val
 }
 
-//StreamFileSegments streams the segment bytes to the Client
+// StreamFileSegments streams the segment bytes to the Client
 func (handler *VideoCache) StreamFileSegments(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	// videoID := params["id"]
 	segmentID := params["segment_id"]
 	value := handler.RedisDB.GetValueByKey(segmentID)
 	b := bytes.NewBuffer([]byte(value))

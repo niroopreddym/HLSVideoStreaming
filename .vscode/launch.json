@@ -5,17 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Launch file",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            // "program": "C:/Users/maneti.n/go/src/github.com/niroopreddym/HLSConversion/server/main.go"
-            "program": "C:/Users/maneti.n/go/src/github.com/niroopreddym/HLSVideoStreaming/test_ffmpeg/main.go"
-            
-            // "args": [
-            //     "-v",
-            //     "2"
-            // ]
+            "program": "${file}"
         }
     ]
 }

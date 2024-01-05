@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
-	"github.com/niroopreddym/HLSConversion/helpers"
-	"github.com/niroopreddym/HLSConversion/services"
+	"github.com/niroopreddym/HLSVideoStreaming/helpers"
+	"github.com/niroopreddym/HLSVideoStreaming/services"
 )
 
-//ShellToUse is the default cli type
-const ShellToUse = "bash"
+// ShellToUse is the default cli type
+// const ShellToUse = "bash"
+const ShellToUse = "sh"
 
 func main() {
 	rdbInstance := services.NewRedisInstance("127.0.0.1", "6379")
@@ -24,27 +25,34 @@ func main() {
 	// rdbInstance.PlaceFFMPEGDataToRedis("OUTPUT/video/", "test_video.mp4")
 	// //spin up a mux api to fetch list of vieo chunks
 
-	//create a temp directory in mount point
-
-	dir, err := ioutil.TempDir("./mountpoint/", "hls.XXXXXXXXXXXX")
+	//create a temp directory in mount point for windwos machines for linux make use of IO pipes
+	tmp, err := os.MkdirTemp(os.TempDir(), "ffmpegtranscoding")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error creating temp dir: %v\n", err)
 	}
 
-	defer os.RemoveAll(dir)
-	//create a fifo in dir in windows let it be tempfile
-	file, err := ioutil.TempFile(dir, "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(file.Name())
+	defer os.RemoveAll(tmp)
 	//go routine to diwnload the S3 to fifo s3 > fifo
 
 	//provide input as fifo to the below command and get the list in outLocation since in linux we dont have any other files int thsi location
 	// its ok but in windows we are altering the code
 	// outLocation := path.Join(dir, file.Name(), "index.m3u8")
-	out, errout, err = Shellout(`ffmpeg -i test_video.mp4 -profile:v baseline -level 3.0 -s 640x360 -start_number 0 -hls_time 10 -hls_list_size 0 -f hls OUTPUT/video/index.m3u8`)
+	outputPath := filepath.Join(tmp, "index.m3u8")
+	cmd := exec.Command("ffmpeg",
+		"-i", "test_video.mp4",
+		"-profile:v", "baseline",
+		"-level", "3.0",
+		"-s", "640x360",
+		"-start_number", "0",
+		"-hls_time", "10",
+		"-hls_list_size", "0",
+		"-f", "hls",
+		`"`+outputPath+`"`,
+	)
+
+	cmdStr := cmd.String()
+	fmt.Println(cmdStr)
+	out, errout, err := Shellout(cmdStr)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 	}
@@ -54,30 +62,47 @@ func main() {
 	fmt.Println("--- stderr ---")
 	fmt.Println(errout)
 
-	// since all the above operation happens in a go routine we need to monitor the go routine for err channel in a parllel for loop and report to the main.go
+	// since all the above operation happens in a go routine we need to monitor the go routine for err channel in a parllel for loop and report to the main.gof
 	//use couple of go routines to push the data to redis
-	ReadFiles("OUTPUT/video/", "test_video.mp4", rdbInstance)
-
+	ReadFiles(tmp+"/", "test_video.mp4", rdbInstance)
 }
 
-//ReadFiles reads all teh file sin the location
+// ReadFiles reads all teh file sin the location
 func ReadFiles(dir string, inputVideo string, rdb *services.Redis) {
-	items, _ := ioutil.ReadDir(dir)
+	items, _ := os.ReadDir(dir)
 	wg := sync.WaitGroup{}
 
+	CleanMasterIndexerKeyForVideoEncodeFiles(rdb, inputVideo)
 	for _, item := range items {
+		if item.IsDir() {
+			continue
+		}
+
 		wg.Add(1)
-		go MoveToRedis(dir, item, rdb, inputVideo, &wg)
+		info, err := item.Info()
+		if err != nil {
+			log.Fatalf("error: %v\n", err)
+		}
+
+		go MoveToRedis(dir, info, rdb, inputVideo, &wg)
 	}
 
 	wg.Wait()
 }
 
-//MoveToRedis moes data to redis
+// clean the master indexer key before pushing keys to list
+func CleanMasterIndexerKeyForVideoEncodeFiles(rdb *services.Redis, inputVideo string) {
+	if rdb.ContainsKey(inputVideo) {
+		rdb.DeleteKey(inputVideo)
+	}
+}
+
+// MoveToRedis moes data to redis
 func MoveToRedis(dir string, item fs.FileInfo, rdb *services.Redis, inputVideo string, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	if item.IsDir() {
-		subitems, _ := ioutil.ReadDir(item.Name())
+		subitems, _ := os.ReadDir(item.Name())
 		for _, subitem := range subitems {
 			if !subitem.IsDir() {
 				fmt.Println(item.Name() + "/" + subitem.Name())
@@ -90,7 +115,7 @@ func MoveToRedis(dir string, item fs.FileInfo, rdb *services.Redis, inputVideo s
 	}
 }
 
-//Shellout sets the default cli type to shell and stdout the response
+// Shellout sets the default cli type to shell and stdout the response
 func Shellout(command string) (string, string, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

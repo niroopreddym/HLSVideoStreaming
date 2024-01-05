@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/niroopreddym/HLSConversion/handlers"
+	"github.com/niroopreddym/HLSVideoStreaming/handlers"
 )
 
 func main() {
@@ -15,18 +15,9 @@ func main() {
 
 	fmt.Println("HLS Stream Server : ", 9293)
 
-	router.Handle("/asset/video/{id}/video.m3u8", http.HandlerFunc(cacheHandler.GetPlaylistInfo)).Methods("GET")
+	router.Handle("/asset/video/{id}/video", http.HandlerFunc(cacheHandler.GetPlaylistInfo)).Methods("GET")
 	router.Handle("/asset/video/{id}/{segment_id}", http.HandlerFunc(cacheHandler.StreamFileSegments)).Methods("GET")
 
-	// router.PathPrefix("/images/").Handler(http.FileServer(http.Dir("OUTPUT")))
-
-	// // HTTP - port 80
-	// http.ListenAndServe(":9293", router)
-
-	// add a handler for the song files
-	// http.Handle("/", addHeaders(http.FileServer(http.Dir("../OUTPUT/video"))))
-	// router.PathPrefix("/images").Handler(addHeaders(http.FileServer(http.Dir("../OUTPUT/video"))))
-	// router.PathPrefix("/images/").Handler(http.StripPrefix("/images/", http.FileServer(http.Dir("../OUTPUT/video"))))
 	fmt.Printf("Starting server on %v\n", 9293)
 
 	// serve and log errors
