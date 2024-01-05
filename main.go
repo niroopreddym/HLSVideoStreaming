@@ -22,24 +22,35 @@ func main() {
 	rdbInstance := services.NewRedisInstance("127.0.0.1", "6379")
 	fmt.Println(rdbInstance)
 
-	// rdbInstance.PlaceFFMPEGDataToRedis("OUTPUT/video/", "test_video.mp4")
-	// //spin up a mux api to fetch list of vieo chunks
-
-	//create a temp directory in mount point for windwos machines for linux make use of IO pipes
+	//--------------create a temp directory in mount point for windwos machines----------
 	tmp, err := os.MkdirTemp(os.TempDir(), "ffmpegtranscoding")
 	if err != nil {
 		log.Printf("error creating temp dir: %v\n", err)
 	}
 
 	defer os.RemoveAll(tmp)
+	//--------------This above block will work for both windows and linux-----------------
+
+	//--------------making use of io pipes on linux kernel----------
+	// tmp, err := os.MkdirTemp(os.TempDir(), "ffmpegtranscoding")
+	// if err != nil {
+	// 	log.Printf("error creating temp dir: %v\n", err)
+	// }
+
+	// defer os.RemoveAll(tmp)
+	//--------------This above block will work for both windows and linux-----------------
+
 	//go routine to diwnload the S3 to fifo s3 > fifo
 
 	//provide input as fifo to the below command and get the list in outLocation since in linux we dont have any other files int thsi location
 	// its ok but in windows we are altering the code
 	// outLocation := path.Join(dir, file.Name(), "index.m3u8")
 	outputPath := filepath.Join(tmp, "index.m3u8")
+	videoID := "test_video.mp4"
 	cmd := exec.Command("ffmpeg",
-		"-i", "test_video.mp4",
+		"-i", videoID,
+		"-i", "TR.png", // Assuming your watermark image is a PNG file
+		"-filter_complex", "overlay=W-w-10:H-h-10", // Adjust the position of the watermark
 		"-profile:v", "baseline",
 		"-level", "3.0",
 		"-s", "640x360",

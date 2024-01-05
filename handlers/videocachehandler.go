@@ -34,7 +34,8 @@ func (handler *VideoCache) GetPlaylistInfo(w http.ResponseWriter, r *http.Reques
 		cmd := handler.RedisDB.RedisClient.LRange(string(videoID), 0, 20)
 		val := cmd.Val()
 		indexFile := val[0]
-		value := handler.RedisDB.GetValueByKey(indexFile)
+		fmt.Println(indexFile)
+		value := handler.RedisDB.GetValueByKey("index.m3u8")
 		//alter the m3u8File and append the prefix to the ts files
 		alteredString := alterTheM3U8Data(value, videoID)
 		b := bytes.NewBuffer([]byte(alteredString))
